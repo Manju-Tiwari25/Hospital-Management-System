@@ -1,0 +1,154 @@
+{% extends 'accounts/base.html' %}
+{% block content %}
+<div class="container-fluid px-3">
+
+  <div class="row g-3 mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+      <div>
+        <h3>Welcome, {{ patient.user_profile.user.get_full_name }} 🧑‍💼</h3>
+        <p class="text-muted mb-0">
+          🩸 {{ patient.blood_group|default:"—" }} &nbsp;·&nbsp;
+          🎂 {{ patient.date_of_birth|default:"—" }}
+        </p>
+      </div>
+      <a href="{% url 'book_appointment' %}" class="btn btn-primary btn-lg">
+         Book Appointment
+      </a>
+    </div>
+
+    <!-- Stats -->
+    <div class="col-md-4">
+      <div class="card bg-info text-white p-3 text-center shadow-sm">
+        <h2>{{ upcoming.count }}</h2>
+        <p class="mb-0">Upcoming Appointments</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card bg-success text-white p-3 text-center shadow-sm">
+        <h2>{{ past.count }}</h2>
+        <p class="mb-0">Past Appointments</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card bg-secondary text-white p-3 text-center shadow-sm">
+        <h2>{{ all_doctors.count }}</h2>
+        <p class="mb-0">Available Doctors</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Upcoming Appointments -->
+    <div class="col-md-7">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between">
+          <h5 class="mb-0"> Upcoming Appointments</h5>
+          <a href="{% url 'book_appointment' %}" class="btn btn-sm btn-light">+ Book New</a>
+        </div>
+        <div class="card-body p-0">
+          {% if upcoming %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Date</th><th>Time</th><th>Doctor</th>
+                  <th>Reason</th><th>Status</th><th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for appt in upcoming %}
+                <tr>
+                  <td>{{ appt.date }}</td>
+                  <td><strong>{{ appt.get_time_display }}</strong></td>
+                  <td>Dr. {{ appt.doctor.user_profile.user.get_full_name }}<br>
+                    <small class="text-muted">{{ appt.doctor.specialization }}</small>
+                  </td>
+                  <td><small>{{ appt.reason|default:"—" }}</small></td>
+                  <td>
+                    <span class="badge
+                      {% if appt.status == 'confirmed' %}bg-success
+                      {% elif appt.status == 'pending' %}bg-warning text-dark
+                      {% elif appt.status == 'cancelled' %}bg-danger
+                      {% else %}bg-secondary{% endif %}">
+                      {{ appt.status|capfirst }}
+                    </span>
+                  </td>
+                  <td>
+                    {% if appt.status == 'pending' %}
+                    <a href="{% url 'cancel_appointment' appt.id %}"
+                       class="btn btn-sm btn-outline-danger"
+                       onclick="return confirm('Cancel this appointment?')">
+                      ✕ Cancel
+                    </a>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+            <div class="text-center py-5">
+              <div style="font-size:2.5rem">📭</div>
+              <p class="text-muted mt-2">No upcoming appointments</p>
+              <a href="{% url 'book_appointment' %}" class="btn btn-primary">
+                Book Your First Appointment
+              </a>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Available Doctors -->
+    <div class="col-md-5">
+      <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0"> Available Doctors</h5>
+        </div>
+        <div class="card-body p-0">
+          {% for doc in all_doctors %}
+          <div class="d-flex align-items-center p-3 border-bottom">
+            <div class="rounded-circle bg-primary text-white d-flex align-items-center
+                        justify-content-center me-3"
+                 style="width:44px;height:44px;font-size:1.1rem;flex-shrink:0">
+              🩺
+            </div>
+            <div class="flex-grow-1">
+              <strong>Dr. {{ doc.user_profile.user.get_full_name }}</strong><br>
+              <small class="text-muted">{{ doc.specialization }}</small>
+            </div>
+            <a href="{% url 'book_appointment' %}?doctor_id={{ doc.id }}"
+               class="btn btn-sm btn-outline-primary">Book</a>
+          </div>
+          {% empty %}
+            <div class="text-center py-4 text-muted">No doctors available yet</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Past Appointments -->
+      {% if past %}
+      <div class="card shadow-sm mt-4">
+        <div class="card-header bg-secondary text-white">
+          <h5 class="mb-0"> Past Appointments</h5>
+        </div>
+        <div class="card-body p-0">
+          {% for appt in past %}
+          <div class="p-3 border-bottom">
+            <div class="d-flex justify-content-between">
+              <strong>Dr. {{ appt.doctor.user_profile.user.get_full_name }}</strong>
+              <span class="badge bg-secondary">{{ appt.status|capfirst }}</span>
+            </div>
+            <small class="text-muted">
+              {{ appt.date }} at {{ appt.get_time_display }}
+            </small>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

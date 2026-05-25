@@ -1,0 +1,158 @@
+{% extends 'accounts/base.html' %}
+{% block content %}
+<div class="container-fluid px-4">
+  <h2 class="mb-4">Book an Appointment</h2>
+
+  {% if messages %}
+    {% for m in messages %}
+      <div class="alert alert-{{ m.tags }}">{{ m }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row">
+    <!-- Step 1: Choose Doctor & Date -->
+    <div class="col-md-4">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">Step 1: Select Doctor & Date</h5>
+        </div>
+        <div class="card-body">
+          <form method="GET">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Choose Doctor</label>
+              <select name="doctor_id" class="form-select" required>
+                <option value="">-- Select Doctor --</option>
+                {% for doc in all_doctors %}
+                  <option value="{{ doc.id }}"
+                    {% if selected_doctor.id == doc.id %}selected{% endif %}>
+                    Dr. {{ doc.user_profile.user.get_full_name }}
+                    ({{ doc.specialization }})
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Choose Date</label>
+              <input type="date" name="date" class="form-control"
+                     value="{{ selected_date }}" min="{{ today }}" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">
+              Check Available Slots
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Doctor Info Card -->
+      {% if selected_doctor %}
+      <div class="card shadow-sm border-primary">
+        <div class="card-body">
+          <h6 class="card-title text-primary">
+            Dr. {{ selected_doctor.user_profile.user.get_full_name }}
+          </h6>
+          <p class="mb-1"><strong>Specialization:</strong> {{ selected_doctor.specialization }}</p>
+          <p class="mb-1"><strong>Experience:</strong> {{ selected_doctor.experience_years }} years</p>
+          <p class="mb-0 text-muted small">{{ selected_doctor.bio }}</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Step 2: Pick a Slot -->
+    <div class="col-md-8">
+      {% if selected_doctor %}
+      <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">
+            Step 2: Pick a Time Slot —
+            {{ selected_date }}
+          </h5>
+        </div>
+        <div class="card-body">
+          {% if available_slots %}
+            <form method="POST" action="{% url 'book_appointment' %}">
+              {% csrf_token %}
+              <input type="hidden" name="doctor_id" value="{{ selected_doctor.id }}">
+              <input type="hidden" name="date" value="{{ selected_date }}">
+
+              <p class="text-muted mb-3">
+                🟢 Available &nbsp;&nbsp; 🔴 Already Booked
+              </p>
+
+              <div class="row g-3 mb-4">
+                {% for slot in available_slots %}
+                <div class="col-6 col-md-3">
+                  {% if slot.booked %}
+                    <!-- Booked slot — not clickable -->
+                    <div class="card text-center p-2 bg-danger text-white" 
+                         style="opacity:0.7; cursor:not-allowed;">
+                      <div style="font-size:1.2rem">🔴</div>
+                      <div class="fw-bold">{{ slot.display }}</div>
+                      <small>Not Available</small>
+                    </div>
+                  {% else %}
+                    <!-- Available slot — radio button -->
+                    <label class="w-100" style="cursor:pointer">
+                      <input type="radio" name="hour" value="{{ slot.hour }}"
+                             class="d-none slot-radio" required>
+                      <div class="card text-center p-2 slot-card border-success"
+                           style="transition:all 0.2s;">
+                        <div style="font-size:1.2rem">🟢</div>
+                        <div class="fw-bold">{{ slot.display }}</div>
+                        <small class="text-success">Available</small>
+                      </div>
+                    </label>
+                  {% endif %}
+                </div>
+                {% endfor %}
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-bold">Reason for Visit (optional)</label>
+                <textarea name="reason" class="form-control" rows="2"
+                          placeholder="e.g. Regular checkup, fever, etc."></textarea>
+              </div>
+
+              <button type="submit" class="btn btn-success w-100 btn-lg">
+                ✅ Confirm Appointment
+              </button>
+            </form>
+
+          {% else %}
+            <div class="text-center py-5">
+              <div style="font-size:3rem"></div>
+              <h5 class="text-danger mt-2">Doctor Not Available</h5>
+              <p class="text-muted">
+                Dr. {{ selected_doctor.user_profile.user.get_full_name }}
+                is not available on this day.<br>
+                Please try a different date.
+              </p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+      {% else %}
+        <div class="card shadow-sm">
+          <div class="card-body text-center py-5">
+            <div style="font-size:3rem">👈</div>
+            <h5 class="mt-2 text-muted">Select a doctor and date to see available slots</h5>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<style>
+.slot-radio:checked + .slot-card {
+  background: #198754 !important;
+  color: white !important;
+  border-color: #198754 !important;
+  transform: scale(1.05);
+}
+.slot-card:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+</style>
+{% endblock %}

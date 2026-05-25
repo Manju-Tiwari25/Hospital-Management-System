@@ -1,0 +1,94 @@
+{% extends 'accounts/base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7">
+    <div class="card shadow-sm">
+      <div class="card-header bg-primary text-white">
+        <h4 class="mb-0"> Set Your Availability</h4>
+      </div>
+      <div class="card-body p-4">
+
+        {% if messages %}
+          {% for m in messages %}
+            <div class="alert alert-success">{{ m }}</div>
+          {% endfor %}
+        {% endif %}
+
+        <!-- Current availability -->
+        {% if availabilities %}
+        <div class="alert alert-info mb-4">
+          <strong>Current Schedule:</strong><br>
+          {% for a in availabilities %}
+             {{ a.day }}: {{ a.start_hour }}:00 — {{ a.end_hour }}:00<br>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="POST">
+          {% csrf_token %}
+
+          <div class="mb-4">
+            <label class="form-label fw-bold">Select Available Days</label>
+            <div class="row g-2">
+              {% for day in days %}
+              <div class="col-6 col-md-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox"
+                         name="days" value="{{ day }}" id="day_{{ day }}"
+                    {% for a in availabilities %}
+                      {% if a.day == day %}checked{% endif %}
+                    {% endfor %}>
+                  <label class="form-check-label" for="day_{{ day }}">
+                    {{ day }}
+                  </label>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Start Time</label>
+              <select name="start_hour" class="form-select">
+                {% for h in hours %}
+                  <option value="{{ h }}"
+                    {% if availabilities %}
+                      {% for a in availabilities %}
+                        {% if a.start_hour == h %}selected{% endif %}
+                      {% endfor %}
+                    {% endif %}>
+                    {{ h }}:00 {% if h < 12 %}AM{% else %}PM{% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">End Time</label>
+              <select name="end_hour" class="form-select">
+                {% for h in hours %}
+                  <option value="{{ h }}"
+                    {% if availabilities %}
+                      {% for a in availabilities %}
+                        {% if a.end_hour == h %}selected{% endif %}
+                      {% endfor %}
+                    {% endif %}>
+                    {{ h }}:00 {% if h < 12 %}AM{% else %}PM{% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100 btn-lg">
+             Save Availability
+          </button>
+          <a href="{% url 'doctor_dashboard' %}" class="btn btn-outline-secondary w-100 mt-2">
+            ← Back to Dashboard
+          </a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

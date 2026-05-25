@@ -1,0 +1,188 @@
+{% extends 'accounts/base.html' %}
+{% block content %}
+<div class="container-fluid px-3">
+
+  <!-- Top stats row -->
+  <div class="row g-3 mb-4">
+    <div class="col-12">
+      <h3>Welcome, Dr. {{ doctor.user_profile.user.get_full_name }} </h3>
+      <p class="text-muted">{{ doctor.specialization }} · {{ today }}</p>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-primary text-white p-3 text-center shadow-sm">
+        <h2>{{ today_appointments.count }}</h2>
+        <p class="mb-0">Today's Appointments</p>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-success text-white p-3 text-center shadow-sm">
+        <h2>{{ total_patients }}</h2>
+        <p class="mb-0">Total Patients</p>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-warning text-white p-3 text-center shadow-sm">
+        <h2>{{ upcoming.count }}</h2>
+        <p class="mb-0">Upcoming</p>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-info text-white p-3 text-center shadow-sm">
+        <h2>{{ doctor.experience_years }}</h2>
+        <p class="mb-0">Years Experience</p>
+      </div>
+    </div>
+  </div>  
+
+  <!-- Quick actions -->
+  <div class="mb-4">
+    <a href="{% url 'set_availability' %}" class="btn btn-outline-primary me-2">
+       Set Availability
+    </a>
+  </div>
+
+  <div class="row g-4">
+    <!-- Today's Appointments -->
+    <div class="col-md-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0"> Today's Appointments</h5>
+        </div>
+        <div class="card-body p-0">
+          {% if today_appointments %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Time</th>
+                  <th>Patient</th>
+                  <th>Reason</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for appt in today_appointments %}
+                <tr>
+                  <td><strong>{{ appt.get_time_display }}</strong></td>
+                  <td>{{ appt.patient.user_profile.user.get_full_name }}</td>
+                  <td><small>{{ appt.reason|default:"—" }}</small></td>
+                  <td>
+                    <span class="badge
+                      {% if appt.status == 'confirmed' %}bg-success
+                      {% elif appt.status == 'pending' %}bg-warning text-dark
+                      {% elif appt.status == 'cancelled' %}bg-danger
+                      {% else %}bg-secondary{% endif %}">
+                      {{ appt.status|capfirst }}
+                    </span>
+                  </td>
+                  <td>
+                    <form method="POST" action="{% url 'update_appointment_status' appt.id %}">
+                      {% csrf_token %}
+                      <select name="status" class="form-select form-select-sm"
+                              onchange="this.form.submit()" style="width:110px">
+                        <option value="pending"   {% if appt.status == 'pending'   %}selected{% endif %}>Pending</option>
+                        <option value="confirmed" {% if appt.status == 'confirmed' %}selected{% endif %}>Confirm</option>
+                        <option value="completed" {% if appt.status == 'completed' %}selected{% endif %}>Complete</option>
+                        <option value="cancelled" {% if appt.status == 'cancelled' %}selected{% endif %}>Cancel</option>
+                      </select>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+            <div class="text-center py-4 text-muted">
+              <div style="font-size:2rem">📭</div>
+              No appointments today
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Upcoming Appointments -->
+    <div class="col-md-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-warning text-dark">
+          <h5 class="mb-0">⏰ Upcoming Appointments</h5>
+        </div>
+        <div class="card-body p-0">
+          {% if upcoming %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr><th>Date</th><th>Time</th><th>Patient</th><th>Reason</th></tr>
+              </thead>
+              <tbody>
+                {% for appt in upcoming %}
+                <tr>
+                  <td>{{ appt.date }}</td>
+                  <td>{{ appt.get_time_display }}</td>
+                  <td>{{ appt.patient.user_profile.user.get_full_name }}</td>
+                  <td><small>{{ appt.reason|default:"—" }}</small></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+            <div class="text-center py-4 text-muted">
+              <div style="font-size:2rem">📭</div>
+              No upcoming appointments
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- All Patients List -->
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">👥 All My Patients ({{ total_patients }})</h5>
+        </div>
+        <div class="card-body p-0">
+          {% if patients_list %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>#</th>
+                  <th>Patient Name</th>
+                  <th>Blood Group</th>
+                  <th>Date of Birth</th>
+                  <th>Emergency Contact</th>
+                  <th>Address</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for p in patients_list %}
+                <tr>
+                  <td>{{ forloop.counter }}</td>
+                  <td><strong>{{ p.user_profile.user.get_full_name }}</strong></td>
+                  <td>
+                    <span class="badge bg-danger">{{ p.blood_group|default:"—" }}</span>
+                  </td>
+                  <td>{{ p.date_of_birth|default:"—" }}</td>
+                  <td>{{ p.emergency_contact|default:"—" }}</td>
+                  <td><small>{{ p.address|default:"—" }}</small></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+            <div class="text-center py-4 text-muted">
+              <div style="font-size:2rem">👥</div>
+              No patients yet
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
