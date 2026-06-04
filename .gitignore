@@ -19,3 +19,6 @@ Thumbs.db
 # IDE files
 .vscode/
 .idea/
+
+# .gitignore
+db.sqlite3

@@ -7,6 +7,8 @@ from .models import UserProfile, DoctorProfile, PatientProfile, Appointment, Doc
 from django.contrib.auth.models import User
 from django.utils import timezone
 import datetime
+from django.core.mail import send_mail
+from django.conf import settings
 
 def register_view(request):
     if request.method == 'POST':
@@ -62,6 +64,30 @@ def register_view(request):
             )
 
         messages.success(request, 'Account created! Please login.')
+        
+        # ── SMTP: Welcome Email ──
+        try:
+            send_mail(
+                subject='Welcome to Hospital App!',
+                message=f'''
+                    Hi {user.get_full_name()},
+
+                    Your account has been created successfully as a {role}.
+
+                    {"You can now set your availability and manage appointments." if role == "doctor" else "You can now search doctors and book appointments."}
+
+                    Login here: http://127.0.0.1:8000/login/
+
+                    - Hospital App Team
+                                    ''',
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=True,
+            )
+        except Exception:
+            pass
+        # ── END Email ──
+
         return redirect('login')
 
     return render(request, 'accounts/register.html')
@@ -228,7 +254,18 @@ def book_appointment(request):
             messages.error(request, '❌ This slot is already booked. Please choose another.')
             return redirect(f'/book-appointment/?doctor_id={doctor_id}&date={date_str}')
 
-        Appointment.objects.create(
+        #Appointment.objects.create(
+            patient=patient,
+            doctor=doctor,
+            date=date_obj,
+            hour=hour_int,
+            reason=reason,
+            status='pending',
+        #)
+        #messages.success(request, f'✅ Appointment booked with Dr. {doctor.user_profile.user.get_full_name()} on {date_str} at {hour_int}:00!')
+        #return redirect('patient_dashboard')
+        
+        appointment = Appointment.objects.create(
             patient=patient,
             doctor=doctor,
             date=date_obj,
@@ -236,7 +273,36 @@ def book_appointment(request):
             reason=reason,
             status='pending',
         )
-        messages.success(request, f'✅ Appointment booked with Dr. {doctor.user_profile.user.get_full_name()} on {date_str} at {hour_int}:00!')
+
+        # ── SMTP: Booking Confirmation Email ──
+        try:
+            send_mail(
+                subject='✅ Appointment Booked Successfully!',
+                message=f'''
+                        Hi {patient.user_profile.user.get_full_name()},
+
+                        Your appointment has been booked!
+
+                        Doctor        : Dr. {doctor.user_profile.user.get_full_name()}
+                        Specialization: {doctor.specialization}
+                        Date          : {date_obj}
+                        Time          : {appointment.get_time_display()}
+                        Reason        : {reason or "Not specified"}
+                        Status        : Pending
+
+                        Please arrive 10 minutes before your appointment time.
+
+                        - Hospital App Team
+                                        ''',
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[patient.user_profile.user.email],
+                fail_silently=True,
+            )
+        except Exception:
+            pass
+        # ── END Email ──
+
+        messages.success(request, f'✅ Appointment booked with Dr. {doctor.user_profile.user.get_full_name()} on {date_obj} at {hour_int}:00!')
         return redirect('patient_dashboard')
 
     return render(request, 'accounts/book_appointment.html', {
@@ -258,8 +324,62 @@ def cancel_appointment(request, appointment_id):
     if appointment.patient != request.user.profile.patient:
         messages.error(request, 'Not allowed.')
         return redirect('patient_dashboard')
+    #appointment.status = 'cancelled'
+    #appointment.save()
+    #messages.success(request, 'Appointment cancelled.')
+    #return redirect('patient_dashboard')
+    
     appointment.status = 'cancelled'
     appointment.save()
+
+    # ── SMTP: Cancellation Email ──
+    try:
+        patient_user = appointment.patient.user_profile.user
+        doctor_user  = appointment.doctor.user_profile.user
+
+        # Email to patient
+        send_mail(
+            subject='❌ Appointment Cancelled',
+            message=f'''
+                    Hi {patient_user.get_full_name()},
+
+                    Your appointment has been cancelled.
+
+                    Doctor : Dr. {doctor_user.get_full_name()}
+                    Date   : {appointment.date}
+                    Time   : {appointment.get_time_display()}
+
+                    Book a new appointment: http://127.0.0.1:8000/book-appointment/
+
+                    - Hospital App Team
+                                ''',
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[patient_user.email],
+            fail_silently=True,
+        )
+
+        # Email to doctor
+        send_mail(
+            subject='❌ Appointment Cancelled by Patient',
+            message=f'''
+                    Hi Dr. {doctor_user.get_full_name()},
+
+                    An appointment was cancelled by the patient.
+
+                    Patient : {patient_user.get_full_name()}
+                    Date    : {appointment.date}
+                    Time    : {appointment.get_time_display()}
+
+                    - Hospital App Team
+                                ''',
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[doctor_user.email],
+            fail_silently=True,
+        )
+    except Exception:
+        pass
+    # ── END Email ──
+
     messages.success(request, 'Appointment cancelled.')
     return redirect('patient_dashboard')
 
@@ -275,9 +395,42 @@ def update_appointment_status(request, appointment_id):
     if request.method == 'POST':
         new_status = request.POST.get('status')
         if new_status in ['confirmed', 'cancelled', 'completed']:
+           # appointment.status = new_status
+           # appointment.notes  = request.POST.get('notes', appointment.notes)
+           # appointment.save()
+           # messages.success(request, f'Appointment marked as {new_status}.')
+           
             appointment.status = new_status
             appointment.notes  = request.POST.get('notes', appointment.notes)
             appointment.save()
+
+            # ── SMTP: Status Update Email ──
+            try:
+                patient_user = appointment.patient.user_profile.user
+                send_mail(
+                    subject=f'📋 Appointment {new_status.capitalize()}',
+                    message=f'''
+                            Hi {patient_user.get_full_name()},
+
+                            Your appointment status has been updated.
+
+                            Doctor : Dr. {appointment.doctor.user_profile.user.get_full_name()}
+                            Date   : {appointment.date}
+                            Time   : {appointment.get_time_display()}
+                            Status : {new_status.upper()}
+
+                            {"Please arrive 10 minutes before your appointment time." if new_status == "confirmed" else ""}
+
+                            - Hospital App Team
+                                                ''',
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[patient_user.email],
+                    fail_silently=True,
+                )
+            except Exception:
+                pass
+            # ── END Email ──
+
             messages.success(request, f'Appointment marked as {new_status}.')
     return redirect('doctor_dashboard')
 

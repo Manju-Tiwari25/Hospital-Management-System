@@ -11,7 +11,10 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+from dotenv import load_dotenv
 import os
+
+load_dotenv()
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -121,3 +124,12 @@ STATIC_URL = 'static/'
 
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
+
+
+EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST          = 'smtp.gmail.com'
+EMAIL_PORT          = 587
+EMAIL_USE_TLS       = True
+EMAIL_HOST_USER     = os.environ.get('manjutiwari.apex@gmail.com')
+EMAIL_HOST_PASSWORD = os.environ.get('lqjp ckur wljt cjtg')
+DEFAULT_FROM_EMAIL  = f'Hospital App <{os.environ.get("EMAIL_HOST_USER")}>'
