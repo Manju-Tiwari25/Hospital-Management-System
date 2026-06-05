@@ -1,7 +1,7 @@
 #  Hospital Management System
 
 A full-featured hospital management web application built with **Python Django**.
-Supports two user roles — **Doctor** and **Patient** — with separate dashboards,
+Supports two user roles  **Doctor** and **Patient**  with separate dashboards,
 appointment booking with slot availability, and automated email notifications via Gmail SMTP.
 
 ---
@@ -27,7 +27,7 @@ appointment booking with slot availability, and automated email notifications vi
 
 ###  Authentication
 - Separate registration for **Doctor** and **Patient**
-- Role-based login — redirects to correct dashboard automatically
+- Role-based login  redirects to correct dashboard automatically
 - Secure password hashing via Django's built-in `create_user()`
 - Logout support
 
@@ -54,7 +54,7 @@ appointment booking with slot availability, and automated email notifications vi
 
 ---
 
-## 🛠 Tech Stack
+##  Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
