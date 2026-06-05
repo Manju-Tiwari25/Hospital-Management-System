@@ -82,10 +82,10 @@ def register_view(request):
                                     ''',
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[user.email],
-                fail_silently=True,
+                fail_silently=False,
             )
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Welcome email error: {e}")
         # ── END Email ──
 
         return redirect('login')
@@ -253,17 +253,7 @@ def book_appointment(request):
         ).exclude(status='cancelled').exists():
             messages.error(request, '❌ This slot is already booked. Please choose another.')
             return redirect(f'/book-appointment/?doctor_id={doctor_id}&date={date_str}')
-
-        #Appointment.objects.create(
-            patient=patient,
-            doctor=doctor,
-            date=date_obj,
-            hour=hour_int,
-            reason=reason,
-            status='pending',
-        #)
-        #messages.success(request, f'✅ Appointment booked with Dr. {doctor.user_profile.user.get_full_name()} on {date_str} at {hour_int}:00!')
-        #return redirect('patient_dashboard')
+    
         
         appointment = Appointment.objects.create(
             patient=patient,
@@ -296,10 +286,10 @@ def book_appointment(request):
                                         ''',
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[patient.user_profile.user.email],
-                fail_silently=True,
+                fail_silently=False,
             )
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Booking email error: {e}")
         # ── END Email ──
 
         messages.success(request, f'✅ Appointment booked with Dr. {doctor.user_profile.user.get_full_name()} on {date_obj} at {hour_int}:00!')
@@ -324,10 +314,6 @@ def cancel_appointment(request, appointment_id):
     if appointment.patient != request.user.profile.patient:
         messages.error(request, 'Not allowed.')
         return redirect('patient_dashboard')
-    #appointment.status = 'cancelled'
-    #appointment.save()
-    #messages.success(request, 'Appointment cancelled.')
-    #return redirect('patient_dashboard')
     
     appointment.status = 'cancelled'
     appointment.save()
@@ -355,7 +341,7 @@ def cancel_appointment(request, appointment_id):
                                 ''',
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[patient_user.email],
-            fail_silently=True,
+            fail_silently=False,
         )
 
         # Email to doctor
@@ -374,10 +360,10 @@ def cancel_appointment(request, appointment_id):
                                 ''',
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[doctor_user.email],
-            fail_silently=True,
+            fail_silently=False,
         )
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Cancellation email error: {e}")
     # ── END Email ──
 
     messages.success(request, 'Appointment cancelled.')
@@ -395,10 +381,6 @@ def update_appointment_status(request, appointment_id):
     if request.method == 'POST':
         new_status = request.POST.get('status')
         if new_status in ['confirmed', 'cancelled', 'completed']:
-           # appointment.status = new_status
-           # appointment.notes  = request.POST.get('notes', appointment.notes)
-           # appointment.save()
-           # messages.success(request, f'Appointment marked as {new_status}.')
            
             appointment.status = new_status
             appointment.notes  = request.POST.get('notes', appointment.notes)
@@ -425,10 +407,10 @@ def update_appointment_status(request, appointment_id):
                                                 ''',
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[patient_user.email],
-                    fail_silently=True,
+                    fail_silently=False,
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Status update email error: {e}")
             # ── END Email ──
 
             messages.success(request, f'Appointment marked as {new_status}.')
