@@ -266,7 +266,7 @@ http://127.0.0.1:8000/register/
 7. Click a green slot to select it
 8. Add reason (optional)
 9. Click "Confirm Appointment"
-10. Email confirmation sent automatically ✅
+10. Email confirmation sent automatically 
 ```
 
 ### Manage Appointments (Doctor)
@@ -354,9 +354,9 @@ Extends Django's built-in User model with a role field.
 | Event | Who receives | Subject |
 |-------|-------------|---------|
 | Registration | New user | Welcome to Hospital App! |
-| Appointment booked | Patient | ✅ Appointment Booked Successfully! |
-| Appointment cancelled | Patient + Doctor | ❌ Appointment Cancelled |
-| Status updated | Patient | 📋 Appointment Confirmed/Completed |
+| Appointment booked | Patient |  Appointment Booked Successfully! |
+| Appointment cancelled | Patient + Doctor |  Appointment Cancelled |
+| Status updated | Patient |  Appointment Confirmed/Completed |
 
 ---
 
@@ -385,7 +385,7 @@ Extends Django's built-in User model with a role field.
 ---
 
 
-## 👩‍💻 Built With
+##  Built With
 
 - [Django](https://www.djangoproject.com/) — Python web framework
 - [Bootstrap 5](https://getbootstrap.com/) — Frontend styling
@@ -395,7 +395,7 @@ Extends Django's built-in User model with a role field.
 
 ---
 
-## 📄 License
+##  License
 
 This project is built for learning purposes.
 Feel free to use, modify, and extend it for your own projects.
