@@ -307,7 +307,7 @@ Extends Django's built-in User model with a role field.
 | user | OneToOneField | Links to Django User |
 | role | CharField | `doctor` or `patient` |
 | phone | CharField | Optional phone number |
-| profile_picture | ImageField | Optional profile image |
+
 
 ### DoctorProfile
 | Field | Type | Description |
@@ -360,18 +360,6 @@ Extends Django's built-in User model with a role field.
 
 ---
 
-##  Screenshots Overview
-
-| Page | Description |
-|------|-------------|
-| Register | Dual-role form — fields change based on Doctor/Patient selection |
-| Login | Simple username/password login |
-| Doctor Dashboard | Stats cards, today's appointments table, all patients list |
-| Patient Dashboard | Upcoming appointments, available doctors list |
-| Book Appointment | Doctor selector, date picker, time slot grid |
-| Set Availability | Day checkboxes, start/end time dropdowns |
-
----
 
 ##  Security Notes
 
