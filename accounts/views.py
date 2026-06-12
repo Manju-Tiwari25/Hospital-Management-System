@@ -3,7 +3,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .forms import UserRegistrationForm, DoctorRegistrationForm, PatientRegistrationForm
-from .models import UserProfile, DoctorProfile, PatientProfile, Appointment, DoctorAvailability
+from .models import UserProfile, DoctorProfile, PatientProfile, Appointment, DoctorAvailability, Prescription, PrescriptionItem
 from django.contrib.auth.models import User
 from django.utils import timezone
 import datetime
@@ -173,6 +173,7 @@ def patient_dashboard(request):
 
     # All doctors for booking
     all_doctors = DoctorProfile.objects.all()
+    prescription_count = Prescription.objects.filter(patient=patient).count()
 
     return render(request, 'accounts/patient_dashboard.html', {
         'patient'    : patient,
@@ -180,6 +181,7 @@ def patient_dashboard(request):
         'past'       : past,
         'all_doctors': all_doctors,
         'today'      : today,
+        'prescription_count' : prescription_count,
     })
 
 
@@ -448,4 +450,161 @@ def set_availability(request):
         'availabilities': availabilities,
         'days'          : ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'],
         'hours'         : list(range(6, 21)),
+    })
+    
+# ── 1. Doctor creates a new prescription ──
+@login_required
+def create_prescription(request):
+    if request.user.profile.role != 'doctor':
+        return redirect('patient_dashboard')
+
+    doctor = request.user.profile.doctor
+    all_patients = PatientProfile.objects.filter(
+        appointments__doctor=doctor
+    ).distinct()
+
+    if request.method == 'POST':
+        patient_id     = request.POST.get('patient_id')
+        appointment_id = request.POST.get('appointment_id', None)
+        diagnosis      = request.POST.get('diagnosis', '')
+        instructions   = request.POST.get('instructions', '')
+        follow_up_date = request.POST.get('follow_up_date') or None
+
+        patient = get_object_or_404(PatientProfile, id=patient_id)
+
+        appointment = None
+        if appointment_id:
+            try:
+                appointment = Appointment.objects.get(id=appointment_id)
+            except Appointment.DoesNotExist:
+                pass
+
+        # Create the prescription
+        prescription = Prescription.objects.create(
+            doctor       = doctor,
+            patient      = patient,
+            appointment  = appointment,
+            diagnosis    = diagnosis,
+            instructions = instructions,
+            follow_up_date = follow_up_date,
+        )
+
+        # Get medicine lists from form
+        medicine_names = request.POST.getlist('medicine_name')
+        dosages        = request.POST.getlist('dosage')
+        frequencies    = request.POST.getlist('frequency')
+        durations      = request.POST.getlist('duration')
+        timings        = request.POST.getlist('timing')
+        med_notes      = request.POST.getlist('med_notes')
+
+        # Save each medicine as PrescriptionItem
+        for i in range(len(medicine_names)):
+            if medicine_names[i].strip():   # skip empty rows
+                PrescriptionItem.objects.create(
+                    prescription  = prescription,
+                    medicine_name = medicine_names[i].strip(),
+                    dosage        = dosages[i] if i < len(dosages) else '',
+                    frequency     = frequencies[i] if i < len(frequencies) else 'once',
+                    duration      = durations[i] if i < len(durations) else '',
+                    timing        = timings[i] if i < len(timings) else '',
+                    notes         = med_notes[i] if i < len(med_notes) else '',
+                )
+
+        # Send email to patient
+        try:
+            patient_user = patient.user_profile.user
+            send_mail(
+                subject='💊 New Prescription from Dr. ' + doctor.user_profile.user.get_full_name(),
+                message=f'''
+                    Hi {patient_user.get_full_name()},
+
+                    Dr. {doctor.user_profile.user.get_full_name()} has created a new prescription for you.
+
+                    Diagnosis    : {diagnosis}
+                    Date         : {prescription.created_at.strftime("%d %B %Y")}
+                    Follow-up    : {follow_up_date or "Not scheduled"}
+                    Instructions : {instructions or "None"}
+
+                    Please log in to view your complete prescription details.
+                    http://127.0.0.1:8000/my-prescriptions/
+
+                    - Hospital App Team
+                                    ''',
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[patient_user.email],
+                fail_silently=False,
+            )
+        except Exception as e:
+            print(f"Prescription email error: {e}")
+
+        messages.success(request, '✅ Prescription created successfully!')
+        return redirect('doctor_prescriptions')
+
+    return render(request, 'accounts/create_prescription.html', {
+        'doctor'      : doctor,
+        'all_patients': all_patients,
+        'frequencies' : PrescriptionItem.FREQUENCY_CHOICES,
+        'timings'     : PrescriptionItem.TIMING_CHOICES,
+    })
+
+
+# ── 2. Doctor views all prescriptions they wrote ──
+@login_required
+def doctor_prescriptions(request):
+    if request.user.profile.role != 'doctor':
+        return redirect('patient_dashboard')
+
+    doctor = request.user.profile.doctor
+
+    prescriptions = Prescription.objects.filter(
+        doctor=doctor
+    ).prefetch_related('items').select_related(
+        'patient__user_profile__user'
+    )
+
+    return render(request, 'accounts/doctor_prescriptions.html', {
+        'doctor'       : doctor,
+        'prescriptions': prescriptions,
+    })
+
+
+# ── 3. Patient views all their prescriptions ──
+@login_required
+def patient_prescriptions(request):
+    if request.user.profile.role != 'patient':
+        return redirect('doctor_dashboard')
+
+    patient = request.user.profile.patient
+
+    prescriptions = Prescription.objects.filter(
+        patient=patient
+    ).prefetch_related('items').select_related(
+        'doctor__user_profile__user'
+    )
+
+    return render(request, 'accounts/patient_prescriptions.html', {
+        'patient'      : patient,
+        'prescriptions': prescriptions,
+    })
+
+
+# ── 4. View single prescription detail (both doctor and patient) ──
+@login_required
+def prescription_detail(request, prescription_id):
+    prescription = get_object_or_404(Prescription, id=prescription_id)
+
+    # Security — only the doctor who wrote it or the patient can view
+    user_profile = request.user.profile
+    if user_profile.role == 'doctor':
+        if prescription.doctor != user_profile.doctor:
+            messages.error(request, 'Not allowed.')
+            return redirect('doctor_prescriptions')
+    else:
+        if prescription.patient != user_profile.patient:
+            messages.error(request, 'Not allowed.')
+            return redirect('patient_prescriptions')
+
+    return render(request, 'accounts/prescription_detail.html', {
+        'prescription': prescription,
+        'items'       : prescription.items.all(),
     })

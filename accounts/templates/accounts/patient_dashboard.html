@@ -14,6 +14,9 @@
       <a href="{% url 'book_appointment' %}" class="btn btn-primary btn-lg">
          Book Appointment
       </a>
+      <a href="{% url 'patient_prescriptions' %}" class="btn btn-success btn-lg">
+    💊 My Prescriptions
+      </a>
     </div>
 
     <!-- Stats -->
@@ -33,6 +36,12 @@
       <div class="card bg-secondary text-white p-3 text-center shadow-sm">
         <h2>{{ all_doctors.count }}</h2>
         <p class="mb-0">Available Doctors</p>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-success text-white p-3 text-center shadow-sm">
+        <h2>{{ prescription_count }}</h2>
+        <p class="mb-0">Prescriptions</p>
       </div>
     </div>
   </div>

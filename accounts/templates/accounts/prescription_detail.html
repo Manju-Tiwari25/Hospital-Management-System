@@ -1,0 +1,136 @@
+{% extends 'accounts/base.html' %}
+{% block content %}
+<div class="container" style="max-width:800px">
+
+  <!-- Print button (hidden when printing) -->
+  <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+    <h2>💊 Prescription Details</h2>
+    <div>
+      <button onclick="window.print()" class="btn btn-outline-success me-2">
+        🖨️ Print
+      </button>
+      {% if request.user.profile.role == 'doctor' %}
+        <a href="{% url 'doctor_prescriptions' %}"
+           class="btn btn-outline-secondary">← Back</a>
+      {% else %}
+        <a href="{% url 'patient_prescriptions' %}"
+           class="btn btn-outline-secondary">← Back</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Prescription Card -->
+  <div class="card shadow-sm" id="prescriptionCard">
+    <!-- Header -->
+    <div class="card-header bg-primary text-white text-center py-3">
+      <h4 class="mb-0">🏥 Hospital App</h4>
+      <p class="mb-0 small">Medical Prescription</p>
+    </div>
+
+    <div class="card-body p-4">
+      <!-- Doctor & Patient info row -->
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <h6 class="text-primary">👨‍⚕️ Doctor</h6>
+          <p class="mb-0">
+            <strong>Dr. {{ prescription.doctor.user_profile.user.get_full_name }}</strong>
+          </p>
+          <p class="mb-0 text-muted">
+            {{ prescription.doctor.specialization }}
+          </p>
+          <p class="mb-0 text-muted small">
+            License: {{ prescription.doctor.license_number }}
+          </p>
+        </div>
+        <div class="col-md-6 text-md-end">
+          <h6 class="text-primary">🧑‍💼 Patient</h6>
+          <p class="mb-0">
+            <strong>{{ prescription.patient.user_profile.user.get_full_name }}</strong>
+          </p>
+          <p class="mb-0 text-muted">
+            🩸 {{ prescription.patient.blood_group|default:"—" }}
+          </p>
+          <p class="mb-0 text-muted small">
+            DOB: {{ prescription.patient.date_of_birth|default:"—" }}
+          </p>
+        </div>
+      </div>
+
+      <hr>
+
+      <!-- Prescription info -->
+      <div class="row mb-3">
+        <div class="col-md-4">
+          <small class="text-muted">Date</small>
+          <p class="mb-0 fw-bold">{{ prescription.created_at|date:"d M Y" }}</p>
+        </div>
+        <div class="col-md-4">
+          <small class="text-muted">Diagnosis</small>
+          <p class="mb-0 fw-bold">{{ prescription.diagnosis }}</p>
+        </div>
+        <div class="col-md-4">
+          <small class="text-muted">Follow-up</small>
+          <p class="mb-0 fw-bold">
+            {{ prescription.follow_up_date|date:"d M Y"|default:"Not scheduled" }}
+          </p>
+        </div>
+      </div>
+
+      {% if prescription.instructions %}
+      <div class="alert alert-info py-2">
+        📋 <strong>Instructions:</strong> {{ prescription.instructions }}
+      </div>
+      {% endif %}
+
+      <!-- Medicines table -->
+      <h6 class="text-success mt-3 mb-2">💊 Prescribed Medicines</h6>
+      <div class="table-responsive">
+        <table class="table table-bordered">
+          <thead class="table-success">
+            <tr>
+              <th>#</th>
+              <th>Medicine</th>
+              <th>Dosage</th>
+              <th>Frequency</th>
+              <th>Duration</th>
+              <th>Timing</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in items %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td><strong>{{ item.medicine_name }}</strong></td>
+              <td>{{ item.dosage }}</td>
+              <td>{{ item.get_frequency_display }}</td>
+              <td>{{ item.duration }}</td>
+              <td>{{ item.get_timing_display|default:"—" }}</td>
+              <td>{{ item.notes|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Doctor signature area -->
+      <div class="text-end mt-4">
+        <p class="mb-0 text-muted small">Digitally issued via Hospital App</p>
+        <p class="mb-0">
+          <strong>Dr. {{ prescription.doctor.user_profile.user.get_full_name }}</strong>
+        </p>
+        <p class="text-muted small">{{ prescription.doctor.specialization }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Print styles -->
+<style>
+@media print {
+  .no-print { display: none !important; }
+  .navbar   { display: none !important; }
+  body      { background: white !important; }
+}
+</style>
+{% endblock %}

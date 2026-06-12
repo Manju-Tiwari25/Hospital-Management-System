@@ -1,0 +1,162 @@
+{% extends 'accounts/base.html' %}
+{% block content %}
+<div class="container-fluid px-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>💊 Create Prescription</h2>
+    <a href="{% url 'doctor_prescriptions' %}" class="btn btn-outline-secondary">
+      ← My Prescriptions
+    </a>
+  </div>
+
+  {% if messages %}
+    {% for m in messages %}
+      <div class="alert alert-{{ m.tags }}">{{ m }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="POST">
+    {% csrf_token %}
+    <div class="row g-4">
+
+      <!-- Left: Patient & Diagnosis -->
+      <div class="col-md-4">
+        <div class="card shadow-sm">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Patient & Diagnosis</h5>
+          </div>
+          <div class="card-body">
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Select Patient *</label>
+              <select name="patient_id" class="form-select" required>
+                <option value="">-- Select Patient --</option>
+                {% for p in all_patients %}
+                  <option value="{{ p.id }}">
+                    {{ p.user_profile.user.get_full_name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Diagnosis *</label>
+              <input type="text" name="diagnosis" class="form-control"
+                     placeholder="e.g. Viral Fever, Hypertension" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Instructions</label>
+              <textarea name="instructions" class="form-control" rows="3"
+                        placeholder="e.g. Drink plenty of water, rest for 3 days"></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Follow-up Date</label>
+              <input type="date" name="follow_up_date" class="form-control">
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Medicines -->
+      <div class="col-md-8">
+        <div class="card shadow-sm">
+          <div class="card-header bg-success text-white d-flex justify-content-between">
+            <h5 class="mb-0">Medicines</h5>
+            <button type="button" class="btn btn-light btn-sm"
+                    onclick="addMedicineRow()">
+              + Add Medicine
+            </button>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table mb-0" id="medicineTable">
+                <thead class="table-light">
+                  <tr>
+                    <th>Medicine Name *</th>
+                    <th>Dosage</th>
+                    <th>Frequency</th>
+                    <th>Duration</th>
+                    <th>Timing</th>
+                    <th>Notes</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="medicineRows">
+                  <!-- First row (always visible) -->
+                  <tr>
+                    <td><input type="text" name="medicine_name" class="form-control form-control-sm" placeholder="e.g. Paracetamol" required></td>
+                    <td><input type="text" name="dosage" class="form-control form-control-sm" placeholder="500mg"></td>
+                    <td>
+                      <select name="frequency" class="form-select form-select-sm">
+                        {% for val, label in frequencies %}
+                          <option value="{{ val }}">{{ label }}</option>
+                        {% endfor %}
+                      </select>
+                    </td>
+                    <td><input type="text" name="duration" class="form-control form-control-sm" placeholder="5 days"></td>
+                    <td>
+                      <select name="timing" class="form-select form-select-sm">
+                        <option value="">--</option>
+                        {% for val, label in timings %}
+                          <option value="{{ val }}">{{ label }}</option>
+                        {% endfor %}
+                      </select>
+                    </td>
+                    <td><input type="text" name="med_notes" class="form-control form-control-sm" placeholder="Optional"></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 btn-lg mt-4">
+          💾 Save Prescription
+        </button>
+      </div>
+
+    </div>
+  </form>
+</div>
+
+<!-- Hidden template row for JS -->
+<template id="medicineRowTemplate">
+  <tr>
+    <td><input type="text" name="medicine_name" class="form-control form-control-sm" placeholder="e.g. Paracetamol"></td>
+    <td><input type="text" name="dosage" class="form-control form-control-sm" placeholder="500mg"></td>
+    <td>
+      <select name="frequency" class="form-select form-select-sm">
+        {% for val, label in frequencies %}
+          <option value="{{ val }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </td>
+    <td><input type="text" name="duration" class="form-control form-control-sm" placeholder="5 days"></td>
+    <td>
+      <select name="timing" class="form-select form-select-sm">
+        <option value="">--</option>
+        {% for val, label in timings %}
+          <option value="{{ val }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </td>
+    <td><input type="text" name="med_notes" class="form-control form-control-sm" placeholder="Optional"></td>
+    <td>
+      <button type="button" class="btn btn-danger btn-sm"
+              onclick="this.closest('tr').remove()">✕</button>
+    </td>
+  </tr>
+</template>
+
+<script>
+function addMedicineRow() {
+  const template = document.getElementById('medicineRowTemplate');
+  const tbody    = document.getElementById('medicineRows');
+  const clone    = template.content.cloneNode(true);
+  tbody.appendChild(clone);
+}
+</script>
+{% endblock %}

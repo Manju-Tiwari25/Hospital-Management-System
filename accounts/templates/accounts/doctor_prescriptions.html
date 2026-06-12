@@ -1,0 +1,97 @@
+{% extends 'accounts/base.html' %}
+{% block content %}
+<div class="container-fluid px-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>💊 My Prescriptions</h2>
+    <div>
+      <a href="{% url 'create_prescription' %}" class="btn btn-primary me-2">
+        + New Prescription
+      </a>
+      <a href="{% url 'doctor_dashboard' %}" class="btn btn-outline-secondary">
+        ← Dashboard
+      </a>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for m in messages %}
+      <div class="alert alert-success">{{ m }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">All Prescriptions ({{ prescriptions.count }})</h5>
+    </div>
+    <div class="card-body p-0">
+      {% if prescriptions %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Patient</th>
+              <th>Diagnosis</th>
+              <th>Medicines</th>
+              <th>Date</th>
+              <th>Follow-up</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in prescriptions %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>
+                <strong>{{ p.patient.user_profile.user.get_full_name }}</strong><br>
+                <small class="text-muted">
+                  🩸 {{ p.patient.blood_group|default:"—" }}
+                </small>
+              </td>
+              <td>{{ p.diagnosis }}</td>
+              <td>
+                <span class="badge bg-info text-dark">
+                  {{ p.items.count }} medicine{{ p.items.count|pluralize }}
+                </span>
+                <br>
+                {% for item in p.items.all|slice:":2" %}
+                  <small class="text-muted">{{ item.medicine_name }}</small><br>
+                {% endfor %}
+                {% if p.items.count > 2 %}
+                  <small class="text-muted">+{{ p.items.count|add:"-2" }} more</small>
+                {% endif %}
+              </td>
+              <td>{{ p.created_at|date:"d M Y" }}</td>
+              <td>
+                {% if p.follow_up_date %}
+                  <span class="badge bg-warning text-dark">
+                    {{ p.follow_up_date|date:"d M Y" }}
+                  </span>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{% url 'prescription_detail' p.id %}"
+                   class="btn btn-sm btn-outline-primary">
+                  View
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <div class="text-center py-5">
+          <div style="font-size:3rem">💊</div>
+          <h5 class="mt-2 text-muted">No prescriptions written yet</h5>
+          <a href="{% url 'create_prescription' %}" class="btn btn-primary mt-2">
+            Write First Prescription
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

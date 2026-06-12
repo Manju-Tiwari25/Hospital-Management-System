@@ -77,7 +77,7 @@ class Appointment(models.Model):
         ('completed', 'completed'),
     ]
     patient = models.ForeignKey(
-        PatientProfile, on_delete=models.CASCADE, related_name='appintements'
+        PatientProfile, on_delete=models.CASCADE, related_name='appointments'
     )
     doctor = models.ForeignKey(
         DoctorProfile, on_delete=models.CASCADE, related_name='Appointment'
@@ -101,3 +101,46 @@ class Appointment(models.Model):
         suffix = 'AM' if self.hour < 12 else 'PM'
         h = self.hour if self.hour <= 12 else self.hour - 12
         return f"{h}:00 {suffix}"
+    
+class Prescription(models.Model):
+    doctor = models.ForeignKey(DoctorProfile, on_delete=models.CASCADE, related_name='prescriptions')
+    patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name='prescriptions')
+    appointment = models.ForeignKey(Appointment, on_delete=models.SET_NULL, null=True, blank=True, related_name='prescriptions')
+    diagnosis = models.CharField(max_length=255)
+    instructions = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    follow_up_date = models.DateField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']   # newest first
+
+    def __str__(self):
+        return f"Prescription #{self.id} - {self.patient} by {self.doctor}"
+
+
+class PrescriptionItem(models.Model):
+    FREQUENCY_CHOICES = [
+        ('once',       'Once a day'),
+        ('twice',      'Twice a day'),
+        ('thrice',     'Three times a day'),
+        ('four_times', 'Four times a day'),
+        ('sos',        'SOS (as needed)'),
+    ]
+
+    TIMING_CHOICES = [
+        ('before_food', 'Before Food'),
+        ('after_food',  'After Food'),
+        ('with_food',   'With Food'),
+        ('empty_stomach', 'Empty Stomach'),
+    ]
+
+    prescription   = models.ForeignKey(Prescription, on_delete=models.CASCADE, related_name='items')
+    medicine_name  = models.CharField(max_length=200)
+    dosage         = models.CharField(max_length=100)   # e.g. "500mg", "10ml"
+    frequency      = models.CharField(max_length=20, choices=FREQUENCY_CHOICES)
+    duration       = models.CharField(max_length=100)   # e.g. "5 days", "1 week"
+    timing         = models.CharField(max_length=20, choices=TIMING_CHOICES, blank=True)
+    notes          = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        return f"{self.medicine_name} - {self.dosage}"
