@@ -5,7 +5,7 @@
   <div class="row g-3 mb-4">
     <div class="col-12 d-flex justify-content-between align-items-center">
       <div>
-        <h3>Welcome, {{ patient.user_profile.user.get_full_name }} 🧑‍💼</h3>
+        <h3>Welcome, {{ patient.user_profile.user.get_full_name }} </h3>
         <p class="text-muted mb-0">
           🩸 {{ patient.blood_group|default:"—" }} &nbsp;·&nbsp;
           🎂 {{ patient.date_of_birth|default:"—" }}
@@ -15,24 +15,24 @@
          Book Appointment
       </a>
       <a href="{% url 'patient_prescriptions' %}" class="btn btn-success btn-lg">
-    💊 My Prescriptions
+     My Prescriptions
       </a>
     </div>
 
     <!-- Stats -->
-    <div class="col-md-4">
+    <div class="col-md-3">
       <div class="card bg-info text-white p-3 text-center shadow-sm">
         <h2>{{ upcoming.count }}</h2>
         <p class="mb-0">Upcoming Appointments</p>
       </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
       <div class="card bg-success text-white p-3 text-center shadow-sm">
         <h2>{{ past.count }}</h2>
         <p class="mb-0">Past Appointments</p>
       </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
       <div class="card bg-secondary text-white p-3 text-center shadow-sm">
         <h2>{{ all_doctors.count }}</h2>
         <p class="mb-0">Available Doctors</p>

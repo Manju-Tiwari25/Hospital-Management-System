@@ -1,3 +1,5 @@
+import re
+import uuid
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
@@ -10,94 +12,170 @@ import datetime
 from django.core.mail import send_mail
 from django.conf import settings
 
+# ─────────────────────────────────────────
+#  HELPER — Generate unique username
+# ─────────────────────────────────────────
+def generate_username(first_name, last_name, email):
+    """
+    Generates a unique username automatically.
+    Strategy: firstname + lastname + random 4 digits
+    Example: john_smith_4821
+    Falls back to email prefix if name is empty.
+    """
+    # Clean the names — lowercase, remove special chars
+    first = re.sub(r'[^a-zA-Z0-9]', '', first_name).lower()
+    last  = re.sub(r'[^a-zA-Z0-9]', '', last_name).lower()
+
+    if first and last:
+        base = f"{first}_{last}"
+    elif first:
+        base = first
+    else:
+        # Use email prefix as fallback
+        base = email.split('@')[0].lower()
+        base = re.sub(r'[^a-zA-Z0-9]', '', base)
+
+    # Add 4 random digits to ensure uniqueness
+    username = f"{base}_{str(uuid.uuid4().int)[:4]}"
+
+    # If username somehow exists, regenerate
+    while User.objects.filter(username=username).exists():
+        username = f"{base}_{str(uuid.uuid4().int)[:4]}"
+
+    return username
+
+
+# ─────────────────────────────────────────
+#  REGISTER VIEW — Improved
+# ─────────────────────────────────────────
 def register_view(request):
+    # Initialize both forms with empty data
+    user_form    = UserRegistrationForm()
+    doctor_form  = DoctorRegistrationForm()
+    patient_form = PatientRegistrationForm()
+
     if request.method == 'POST':
-        # Get basic data
-        username = request.POST.get('username')
-        first_name = request.POST.get('first_name')
-        last_name = request.POST.get('last_name')
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        confirm_password = request.POST.get('confirm_password')
-        role = request.POST.get('role')
+        role         = request.POST.get('role', 'patient')
+        user_form    = UserRegistrationForm(request.POST)
+        doctor_form  = DoctorRegistrationForm(request.POST)
+        patient_form = PatientRegistrationForm(request.POST)
 
-        # Validate passwords
-        if password != confirm_password:
-            messages.error(request, 'Passwords do not match!')
-            return redirect('register')
+        # Validate user form first
+        user_form_valid = user_form.is_valid()
 
-        # Check username not taken
-        
-        if User.objects.filter(username=username).exists():
-            messages.error(request, 'Username already taken!')
-            return redirect('register')
-
-        # Create user
-        user = User.objects.create_user(
-            username=username,
-            first_name=first_name,
-            last_name=last_name,
-            email=email,
-            password=password
-        )
-
-        # Create profile
-        profile = UserProfile.objects.create(user=user, role=role)
-
-        # Create role-specific profile
-        if role == 'doctor':           
-            DoctorProfile.objects.create(
-                user_profile=profile,
-                specialization=request.POST.get('specialization', ''),
-                license_number=request.POST.get('license_number', ''),
-                experience_years=request.POST.get('experience_years', 0),
-                bio=request.POST.get('bio', ''),
-            )
+        # Validate role-specific form
+        if role == 'doctor':
+            role_form_valid = doctor_form.is_valid()
         else:
-            dob = request.POST.get('date_of_birth')
-            PatientProfile.objects.create(
-                user_profile=profile,
-                date_of_birth=dob,
-                blood_group=request.POST.get('blood_group', ''),
-                address=request.POST.get('address', ''),
-                emergency_contact=request.POST.get('emergency_contact', ''),
+            role_form_valid = patient_form.is_valid()
+
+        if user_form_valid and role_form_valid:
+            # Extract cleaned data
+            first_name = user_form.cleaned_data['first_name']
+            last_name  = user_form.cleaned_data['last_name']
+            email      = user_form.cleaned_data['email']
+            phone      = user_form.cleaned_data.get('phone', '')
+            password   = user_form.cleaned_data['password1']
+
+            # Auto-generate unique username
+            username = generate_username(first_name, last_name, email)
+
+            # Create the User
+            user = User.objects.create_user(
+                username   = username,
+                first_name = first_name,
+                last_name  = last_name,
+                email      = email,
+                password   = password,
             )
 
-        messages.success(request, 'Account created! Please login.')
-        
-        # ── SMTP: Welcome Email ──
-        try:
-            send_mail(
-                subject='Welcome to Hospital App!',
-                message=f'''
-                    Hi {user.get_full_name()},
-
-                    Your account has been created successfully as a {role}.
-
-                    {"You can now set your availability and manage appointments." if role == "doctor" else "You can now search doctors and book appointments."}
-
-                    Login here: http://127.0.0.1:8000/login/
-
-                    - Hospital App Team
-                                    ''',
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-                fail_silently=False,
+            # Create UserProfile
+            profile = UserProfile.objects.create(
+                user  = user,
+                role  = role,
+                phone = phone,
             )
-        except Exception as e:
-            print(f"Welcome email error: {e}")
-        # ── END Email ──
 
-        return redirect('login')
+            # Create role-specific profile
+            if role == 'doctor':
+                DoctorProfile.objects.create(
+                    user_profile    = profile,
+                    specialization  = doctor_form.cleaned_data['specialization'],
+                    license_number  = doctor_form.cleaned_data['license_number'],
+                    experience_years= doctor_form.cleaned_data.get('experience_years', 0),
+                    bio             = doctor_form.cleaned_data.get('bio', ''),
+                )
+            else:
+                PatientProfile.objects.create(
+                    user_profile      = profile,
+                    date_of_birth     = patient_form.cleaned_data.get('date_of_birth'),
+                    blood_group       = patient_form.cleaned_data.get('blood_group', ''),
+                    address           = patient_form.cleaned_data.get('address', ''),
+                    emergency_contact = patient_form.cleaned_data.get('emergency_contact', ''),
+                )
 
-    return render(request, 'accounts/register.html')
+            # Send welcome email with generated username
+            try:
+                send_mail(
+                    subject='Welcome to Hospital App — Your Login Details',
+                    message=f'''
+Hi {user.get_full_name()},
 
+Your account has been created successfully!
+
+Your Login Details:
+  Email    : {email}
+  Username : {username}
+  Role     : {role.capitalize()}
+
+{"You can now set your availability and manage patient appointments." if role == "doctor" else "You can now search for doctors and book appointments."}
+
+Login here: http://127.0.0.1:8000/login/
+
+- Hospital App Team
+                    ''',
+                    from_email    = settings.DEFAULT_FROM_EMAIL,
+                    recipient_list= [email],
+                    fail_silently = False,
+                )
+            except Exception as e:
+                print(f"Welcome email error: {e}")
+
+            messages.success(
+                request,
+                f'✅ Account created! Your username is: {username} — Check your email for login details.'
+            )
+            return redirect('login')
+
+        # ── Validation failed — forms retain data ──
+        # Forms are re-rendered with errors automatically
+        # because we pass the bound forms back to template
+
+    return render(request, 'accounts/register.html', {
+        'user_form'   : user_form,
+        'doctor_form' : doctor_form,
+        'patient_form': patient_form,
+    })
 
 def login_view(request):
     if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
-        user = authenticate(request, username=username, password=password)
+        login_input = request.POST.get('login_input', '').strip()
+        password    = request.POST.get('password', '')
+
+        # Try login with username first
+        user = authenticate(request, username=login_input, password=password)
+
+        # If that fails, try finding user by email
+        if user is None:
+            try:
+                user_obj = User.objects.get(email=login_input.lower())
+                user = authenticate(
+                    request,
+                    username=user_obj.username,
+                    password=password
+                )
+            except User.DoesNotExist:
+                user = None
 
         if user:
             login(request, user)
@@ -106,7 +184,10 @@ def login_view(request):
             else:
                 return redirect('patient_dashboard')
         else:
-            messages.error(request, 'Invalid username or password')
+            messages.error(
+                request,
+                'Invalid email/username or password. Please try again.'
+            )
 
     return render(request, 'accounts/login.html')
 

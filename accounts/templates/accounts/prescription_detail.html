@@ -31,7 +31,7 @@
       <!-- Doctor & Patient info row -->
       <div class="row mb-4">
         <div class="col-md-6">
-          <h6 class="text-primary">👨‍⚕️ Doctor</h6>
+          <h6 class="text-primary"> Doctor</h6>
           <p class="mb-0">
             <strong>Dr. {{ prescription.doctor.user_profile.user.get_full_name }}</strong>
           </p>
@@ -43,7 +43,7 @@
           </p>
         </div>
         <div class="col-md-6 text-md-end">
-          <h6 class="text-primary">🧑‍💼 Patient</h6>
+          <h6 class="text-primary">Patient</h6>
           <p class="mb-0">
             <strong>{{ prescription.patient.user_profile.user.get_full_name }}</strong>
           </p>
@@ -83,7 +83,7 @@
       {% endif %}
 
       <!-- Medicines table -->
-      <h6 class="text-success mt-3 mb-2">💊 Prescribed Medicines</h6>
+      <h6 class="text-success mt-3 mb-2">Prescribed Medicines</h6>
       <div class="table-responsive">
         <table class="table table-bordered">
           <thead class="table-success">

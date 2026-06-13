@@ -1,126 +1,257 @@
 {% extends 'accounts/base.html' %}
 {% block content %}
 
-<div class="row justify-content-center">
-  <div class="col-md-7">
-    <div class="card p-4 mt-3">
-      <h2 class="mb-3">Create Account</h2>
+<div class="row justify-content-center py-4">
+  <div class="col-md-8 col-lg-7">
 
-      {% if messages %}
-        {% for message in messages %}
-          <div class="alert alert-danger">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
+    <div class="card shadow border-0 rounded-3">
+      <div class="card-header bg-primary text-white text-center py-3">
+        <h4 class="mb-0"> Create Your Account</h4>
+        <small class="opacity-75">
+          Already have an account?
+          <a href="{% url 'login' %}" class="text-white fw-bold">Login here</a>
+        </small>
+      </div>
 
-      <form method="POST" action="{% url 'register' %}">
-        {% csrf_token %}
+      <div class="card-body p-4">
 
-        <h5>Basic Info</h5>
-
-        <div class="mb-2">
-          <label>Username *</label><br>
-          <input type="text" name="username" class="form-control" required>
-        </div>
-
-        <div class="mb-2">
-          <label>First Name</label><br>
-          <input type="text" name="first_name" class="form-control">
-        </div>
-
-        <div class="mb-2">
-          <label>Last Name</label><br>
-          <input type="text" name="last_name" class="form-control">
-        </div>
-
-        <div class="mb-2">
-          <label>Email *</label><br>
-          <input type="email" name="email" class="form-control" required>
-        </div>
-
-        <div class="mb-2">
-          <label>Password *</label><br>
-          <input type="password" name="password" class="form-control" required>
-        </div>
-
-        <div class="mb-3">
-          <label>Confirm Password *</label><br>
-          <input type="password" name="confirm_password" class="form-control" required>
-        </div>
-
-        <div class="mb-3">
-          <label><strong>Register As: *</strong></label><br>
-          <select name="role" id="roleSelect" class="form-select" onchange="toggleForms()">
-            <option value="patient">Patient</option>
-            <option value="doctor">Doctor</option>
-          </select>
-        </div>
-
-        <!-- Doctor Fields -->
-        <div id="doctorFields" style="display:none;">
-          <h5>Doctor Details</h5>
-          <div class="mb-2">
-            <label>Specialization</label><br>
-            <input type="text" name="specialization" class="form-control">
+        <!-- Non-field errors -->
+        {% if user_form.non_field_errors %}
+          <div class="alert alert-danger">
+            {% for error in user_form.non_field_errors %}
+              <div>{{ error }}</div>
+            {% endfor %}
           </div>
-          <div class="mb-2">
-            <label>License Number</label><br>
-            <input type="text" name="license_number" class="form-control">
-          </div>
-          <div class="mb-2">
-            <label>Experience (years)</label><br>
-            <input type="number" name="experience_years" class="form-control" value="0">
-          </div>
-          <div class="mb-2">
-            <label>Bio</label><br>
-            <textarea name="bio" class="form-control" rows="3"></textarea>
-          </div>
-        </div>
+        {% endif %}
 
-        <!-- Patient Fields -->
-        <div id="patientFields">
-          <h5>Patient Details</h5>
-          <div class="mb-2">
-            <label>Date of Birth</label><br>
-            <input type="date" name="date_of_birth" class="form-control">
-          </div>
-          <div class="mb-2">
-            <label>Blood Group</label><br>
-            <select name="blood_group" class="form-select">
-              <option value="">-- Select --</option>
-              <option value="A+">A+</option>
-              <option value="A-">A-</option>
-              <option value="B+">B+</option>
-              <option value="B-">B-</option>
-              <option value="O+">O+</option>
-              <option value="O-">O-</option>
-              <option value="AB+">AB+</option>
-              <option value="AB-">AB-</option>
-            </select>
-          </div>
-          <div class="mb-2">
-            <label>Address</label><br>
-            <textarea name="address" class="form-control" rows="3"></textarea>
-          </div>
-          <div class="mb-2">
-            <label>Emergency Contact</label><br>
-            <input type="text" name="emergency_contact" class="form-control">
-          </div>
-        </div>
+        <form method="POST" novalidate>
+          {% csrf_token %}
 
-        <button type="submit" class="btn btn-primary w-100 mt-3">Register</button>
-        <p class="mt-2">Already have an account? <a href="{% url 'login' %}">Login</a></p>
+          <!-- ── SECTION 1: Basic Info ── -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            Basic Information
+          </h6>
 
-      </form>  <!-- ← form closes HERE, after the button -->
+          <div class="row g-3 mb-3">
+            <!-- First Name -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">
+                First Name <span class="text-danger">*</span>
+              </label>
+              {{ user_form.first_name }}
+              {% if user_form.first_name.errors %}
+                <div class="text-danger small mt-1">
+                  {% for e in user_form.first_name.errors %}{{ e }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- Last Name -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">
+                Last Name <span class="text-danger">*</span>
+              </label>
+              {{ user_form.last_name }}
+              {% if user_form.last_name.errors %}
+                <div class="text-danger small mt-1">
+                  {% for e in user_form.last_name.errors %}{{ e }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- Email -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">
+                Email Address <span class="text-danger">*</span>
+              </label>
+              {{ user_form.email }}
+              {% if user_form.email.errors %}
+                <div class="text-danger small mt-1">
+                  {% for e in user_form.email.errors %}{{ e }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text text-muted small">
+                You can use this email to login.
+              </div>
+            </div>
+
+            <!-- Phone -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Phone Number</label>
+              {{ user_form.phone }}
+              {% if user_form.phone.errors %}
+                <div class="text-danger small mt-1">
+                  {% for e in user_form.phone.errors %}{{ e }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- Password -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">
+                Password <span class="text-danger">*</span>
+              </label>
+              {{ user_form.password1 }}
+              {% if user_form.password1.errors %}
+                <div class="text-danger small mt-1">
+                  {% for e in user_form.password1.errors %}{{ e }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text text-muted small">
+                Min 8 characters. Mix letters, numbers and symbols.
+              </div>
+            </div>
+
+            <!-- Confirm Password -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">
+                Confirm Password <span class="text-danger">*</span>
+              </label>
+              {{ user_form.password2 }}
+              {% if user_form.password2.errors %}
+                <div class="text-danger small mt-1">
+                  {% for e in user_form.password2.errors %}{{ e }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- ── SECTION 2: Role Selection ── -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2 mt-4">
+            Register As
+          </h6>
+
+          <div class="mb-4">
+            <div class="row g-3">
+              <!-- Patient Card -->
+              <div class="col-md-6">
+                <input type="radio" class="btn-check" name="role"
+                       id="role_patient" value="patient"
+                       {% if user_form.data.role == 'doctor' %}{% else %}checked{% endif %}
+                       onchange="switchRole('patient')">
+                <label class="btn btn-outline-primary w-100 p-3 text-start"
+                       for="role_patient">
+                  <div class="fw-bold"> Patient</div>
+                  <small class="text-muted">Book appointments with doctors</small>
+                </label>
+              </div>
+              <!-- Doctor Card -->
+              <div class="col-md-6">
+                <input type="radio" class="btn-check" name="role"
+                       id="role_doctor" value="doctor"
+                       {% if user_form.data.role == 'doctor' %}checked{% endif %}
+                       onchange="switchRole('doctor')">
+                <label class="btn btn-outline-success w-100 p-3 text-start"
+                       for="role_doctor">
+                  <div class="fw-bold"> Doctor</div>
+                  <small class="text-muted">Manage patients and appointments</small>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── SECTION 3A: Doctor Fields ── -->
+          <div id="doctorSection"
+               style="display:{% if user_form.data.role == 'doctor' %}block{% else %}none{% endif %}">
+            <h6 class="text-success fw-bold mb-3 border-bottom pb-2">
+               Doctor Details
+            </h6>
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">
+                  Specialization <span class="text-danger">*</span>
+                </label>
+                {{ doctor_form.specialization }}
+                {% if doctor_form.specialization.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for e in doctor_form.specialization.errors %}{{ e }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">
+                  License Number <span class="text-danger">*</span>
+                </label>
+                {{ doctor_form.license_number }}
+                {% if doctor_form.license_number.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for e in doctor_form.license_number.errors %}{{ e }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Experience (Years)</label>
+                {{ doctor_form.experience_years }}
+                {% if doctor_form.experience_years.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for e in doctor_form.experience_years.errors %}{{ e }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Bio</label>
+                {{ doctor_form.bio }}
+              </div>
+            </div>
+          </div>
+
+          <!-- ── SECTION 3B: Patient Fields ── -->
+          <div id="patientSection"
+               style="display:{% if user_form.data.role == 'doctor' %}none{% else %}block{% endif %}">
+            <h6 class="text-info fw-bold mb-3 border-bottom pb-2">
+              Patient Details
+            </h6>
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Date of Birth</label>
+                {{ patient_form.date_of_birth }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Blood Group</label>
+                {{ patient_form.blood_group }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Address</label>
+                {{ patient_form.address }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Emergency Contact</label>
+                {{ patient_form.emergency_contact }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Info box about auto username -->
+          <div class="alert alert-info py-2 px-3 small mt-2">
+            ℹ️ A unique username will be automatically generated for your account.
+            You can also log in with your email address.
+          </div>
+
+          <!-- Submit -->
+          <button type="submit" class="btn btn-primary w-100 btn-lg mt-2">
+            Create Account →
+          </button>
+
+        </form>
+      </div>
     </div>
+
   </div>
 </div>
 
 <script>
-function toggleForms() {
-  const role = document.getElementById('roleSelect').value;
-  document.getElementById('doctorFields').style.display = role === 'doctor' ? 'block' : 'none';
-  document.getElementById('patientFields').style.display = role === 'patient' ? 'block' : 'none';
+// Switch role sections when radio button changes
+function switchRole(role) {
+  document.getElementById('doctorSection').style.display  = role === 'doctor'  ? 'block' : 'none';
+  document.getElementById('patientSection').style.display = role === 'patient' ? 'block' : 'none';
 }
+
+// On page load — set correct section based on selection
+// (handles page reload after validation error)
+document.addEventListener('DOMContentLoaded', function () {
+  const checkedRole = document.querySelector('input[name="role"]:checked');
+  if (checkedRole) switchRole(checkedRole.value);
+});
 </script>
 
 {% endblock %}
