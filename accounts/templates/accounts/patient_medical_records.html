@@ -1,0 +1,133 @@
+{% extends 'accounts/base.html' %}
+{% block content %}
+
+<div class="container-fluid px-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>My Medical Records</h2>
+    <a href="{% url 'patient_dashboard' %}" class="btn btn-outline-secondary">
+      ← Dashboard
+    </a>
+  </div>
+
+  <!-- Filter by type -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body py-2">
+      <form method="GET" class="row g-2 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label fw-bold small mb-1">Filter by Type</label>
+          <select name="record_type" class="form-select form-select-sm"
+                  onchange="this.form.submit()">
+            <option value="">All Types</option>
+            {% for val, label in record_types %}
+              <option value="{{ val }}"
+                {% if type_filter == val %}selected{% endif %}>
+                {{ label }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <a href="{% url 'patient_medical_records' %}"
+             class="btn btn-outline-secondary btn-sm">Clear</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Records as Cards -->
+  {% if records %}
+    <div class="row g-4">
+      {% for rec in records %}
+      <div class="col-md-6 col-lg-4">
+        <div class="card shadow-sm h-100 border-0">
+
+          <!-- File preview at top of card -->
+          <div class="bg-light d-flex align-items-center justify-content-center"
+               style="height:140px; border-radius:8px 8px 0 0; overflow:hidden;">
+            {% if rec.file %}
+              {% if rec.is_image %}
+                <!-- Show actual image thumbnail -->
+                <img src="{{ rec.file.url }}"
+                     alt="{{ rec.title }}"
+                     style="width:100%; height:140px; object-fit:cover;">
+              {% elif rec.is_pdf %}
+                <!-- Show PDF icon -->
+                <div class="text-center">
+                  <div style="font-size:3rem;">📄</div>
+                  <small class="text-muted">PDF Document</small>
+                </div>
+              {% endif %}
+            {% else %}
+              <!-- No file attached -->
+              <div class="text-center">
+                <div style="font-size:3rem;">📋</div>
+                <small class="text-muted">No file attached</small>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="card-body">
+            <!-- Record type badge -->
+            <span class="badge mb-2
+              {% if rec.record_type == 'lab_report' %}bg-info text-dark
+              {% elif rec.record_type == 'xray_scan' %}bg-warning text-dark
+              {% elif rec.record_type == 'prescription' %}bg-success
+              {% elif rec.record_type == 'doctors_note' %}bg-primary
+              {% elif rec.record_type == 'vaccination' %}bg-secondary
+              {% else %}bg-dark{% endif %}">
+              {{ rec.get_record_type_display }}
+            </span>
+
+            <h6 class="card-title fw-bold mb-1">{{ rec.title }}</h6>
+
+            <p class="text-muted small mb-1">
+              👨‍⚕️ Dr. {{ rec.doctor.user_profile.user.get_full_name }}
+            </p>
+            <p class="text-muted small mb-2">
+              📅 {{ rec.record_date|date:"d M Y" }}
+            </p>
+
+            {% if rec.description %}
+              <p class="small text-muted mb-0">
+                {{ rec.description|truncatechars:80 }}
+              </p>
+            {% endif %}
+          </div>
+
+          <!-- View and Download buttons -->
+          <div class="card-footer bg-white border-0 pb-3">
+            <div class="d-flex gap-2">
+              <a href="{% url 'medical_record_detail' rec.id %}"
+                 class="btn btn-outline-primary btn-sm flex-fill">
+                View Details
+              </a>
+              {% if rec.file %}
+                <a href="{{ rec.file.url }}"
+                   target="_blank"
+                   class="btn btn-outline-success btn-sm flex-fill">
+                  ⬇️ Download
+                </a>
+              {% endif %}
+            </div>
+          </div>
+
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+  {% else %}
+    <div class="card shadow-sm">
+      <div class="card-body text-center py-5">
+        <div style="font-size:3rem;">📁</div>
+        <h5 class="mt-2 text-muted">No medical records yet</h5>
+        <p class="text-muted">
+          Your doctor will upload your lab reports and records after your appointment.
+        </p>
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

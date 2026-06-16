@@ -144,3 +144,48 @@ class PrescriptionItem(models.Model):
 
     def __str__(self):
         return f"{self.medicine_name} - {self.dosage}"
+    
+def medical_record_upload_path(instance, filename):
+    return f'medical_records/patient_{instance.patient.id}/{filename}'
+
+
+class MedicalRecord(models.Model):
+    RECORD_TYPES = [
+        ('lab_report',    'Lab Report'),
+        ('xray_scan',     'X-Ray / Scan'),
+        ('prescription',  'Prescription'),
+        ('doctors_note',  "Doctor's Note"),
+        ('vaccination',   'Vaccination Record'),
+        ('other',         'Other'),
+    ]
+
+    doctor = models.ForeignKey(DoctorProfile, on_delete=models.CASCADE, related_name='uploaded_records')
+    patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name='medical_records')
+    appointment = models.ForeignKey(Appointment, on_delete=models.SET_NULL, null=True, blank=True, related_name='medical_records')
+
+    title       = models.CharField(max_length=200)
+    record_type = models.CharField(max_length=20, choices=RECORD_TYPES, default='lab_report')
+    description = models.TextField(blank=True)
+    file        = models.FileField(upload_to=medical_record_upload_path, null=True, blank=True)
+    record_date = models.DateField()
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-record_date', '-created_at']
+
+    def __str__(self):
+        return f"{self.title} — {self.patient} ({self.record_date})"
+
+    def get_file_extension(self):
+        if self.file:
+            name = self.file.name.lower()
+            if name.endswith('.pdf'): return 'pdf'
+            elif name.endswith(('.jpg', '.jpeg')): return 'jpg'
+            elif name.endswith('.png'): return 'png'
+        return 'file'
+
+    def is_image(self):
+        return self.get_file_extension() in ['jpg', 'png']
+
+    def is_pdf(self):
+        return self.get_file_extension() == 'pdf'

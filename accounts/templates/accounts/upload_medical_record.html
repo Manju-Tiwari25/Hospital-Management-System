@@ -1,0 +1,169 @@
+{% extends 'accounts/base.html' %}
+{% block content %}
+
+<div class="container" style="max-width:780px;">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2> Upload Medical Record</h2>
+    <a href="{% url 'doctor_medical_records' %}" class="btn btn-outline-secondary">
+      ← My Records
+    </a>
+  </div>
+
+  <!-- Error messages -->
+  {% if messages %}
+    {% for m in messages %}
+      <div class="alert alert-danger py-2">⚠️ {{ m }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- IMPORTANT: enctype="multipart/form-data" is required for file uploads -->
+  <form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="card shadow-sm">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Record Details</h5>
+      </div>
+      <div class="card-body p-4">
+        <div class="row g-3">
+
+          <!-- Patient Dropdown -->
+          <div class="col-md-6">
+            <label class="form-label fw-bold">
+              Patient <span class="text-danger">*</span>
+            </label>
+            <select name="patient_id" class="form-select" required>
+              <option value="">-- Select Patient --</option>
+              {% for p in all_patients %}
+                <option value="{{ p.id }}"
+                  {% if form_data.patient_id == p.id|stringformat:"s" %}selected{% endif %}>
+                  {{ p.user_profile.user.get_full_name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Record Type Dropdown -->
+          <div class="col-md-6">
+            <label class="form-label fw-bold">
+              Record Type <span class="text-danger">*</span>
+            </label>
+            <select name="record_type" class="form-select" required>
+              {% for val, label in record_types %}
+                <option value="{{ val }}"
+                  {% if form_data.record_type == val %}selected{% endif %}>
+                  {{ label }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Title -->
+          <div class="col-12">
+            <label class="form-label fw-bold">
+              Title <span class="text-danger">*</span>
+            </label>
+            <input type="text"
+                   name="title"
+                   class="form-control"
+                   placeholder="e.g. Blood Test Report June 2026"
+                   value="{{ form_data.title|default:'' }}"
+                   required>
+          </div>
+
+          <!-- Record Date -->
+          <div class="col-md-6">
+            <label class="form-label fw-bold">
+              Record Date <span class="text-danger">*</span>
+            </label>
+            <input type="date"
+                   name="record_date"
+                   class="form-control"
+                   value="{{ form_data.record_date|default:'' }}"
+                   required>
+          </div>
+
+          <!-- File Upload -->
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Upload File</label>
+            <input type="file"
+                   name="file"
+                   class="form-control"
+                   accept=".pdf,.jpg,.jpeg,.png"
+                   onchange="previewFile(this)">
+            <div class="form-text text-muted">
+              PDF, JPG or PNG only · Max 5MB
+            </div>
+          </div>
+
+          <!-- Live File Preview (shown after file is selected) -->
+          <div class="col-12" id="filePreviewArea" style="display:none;">
+            <div class="alert alert-success py-2 mb-2">
+              ✅ <strong>Selected:</strong>
+              <span id="fileName"></span>
+              <span id="fileSize" class="text-muted ms-2 small"></span>
+            </div>
+            <!-- Image thumbnail preview -->
+            <div id="imagePreviewDiv" style="display:none;">
+              <img id="previewImg" src=""
+                   style="max-height:180px; border-radius:8px; border:1px solid #dee2e6;">
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="col-12">
+            <label class="form-label fw-bold">Description / Notes</label>
+            <textarea name="description"
+                      class="form-control"
+                      rows="3"
+                      placeholder="e.g. HbA1c levels are within normal range. Follow-up in 3 months.">{{ form_data.description|default:'' }}</textarea>
+          </div>
+
+        </div>
+      </div><!-- end card-body -->
+
+      <div class="card-footer bg-light p-3">
+        <button type="submit" class="btn btn-primary btn-lg w-100">
+          📤 Upload Record
+        </button>
+      </div>
+    </div><!-- end card -->
+
+  </form>
+</div>
+
+<script>
+// Show file name, size, and image preview when user selects a file
+function previewFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  // Show the preview area
+  document.getElementById('filePreviewArea').style.display = 'block';
+  document.getElementById('fileName').textContent = file.name;
+
+  // Show file size in KB or MB
+  const kb = file.size / 1024;
+  document.getElementById('fileSize').textContent =
+    kb > 1024 ? `(${(kb / 1024).toFixed(1)} MB)` : `(${Math.round(kb)} KB)`;
+
+  // Show image thumbnail if it's an image file
+  const isImage = file.type.startsWith('image/');
+  const imgDiv  = document.getElementById('imagePreviewDiv');
+  const imgEl   = document.getElementById('previewImg');
+
+  if (isImage) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      imgEl.src = e.target.result;
+      imgDiv.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  } else {
+    imgDiv.style.display = 'none';
+  }
+}
+</script>
+
+{% endblock %}

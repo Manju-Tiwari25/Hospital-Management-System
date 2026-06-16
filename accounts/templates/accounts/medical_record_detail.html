@@ -1,0 +1,157 @@
+{% extends 'accounts/base.html' %}
+{% block content %}
+
+<div class="container" style="max-width:800px;">
+
+  <!-- Top buttons — hidden when printing -->
+  <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+    <h2>📁 Record Details</h2>
+    <div class="d-flex gap-2">
+      {% if record.file %}
+        <a href="{{ record.file.url }}"
+           target="_blank"
+           class="btn btn-success">
+          ⬇️ Download File
+        </a>
+      {% endif %}
+      <button onclick="window.print()" class="btn btn-outline-secondary">
+        🖨️ Print
+      </button>
+      {% if request.user.profile.role == 'doctor' %}
+        <a href="{% url 'doctor_medical_records' %}" class="btn btn-outline-secondary">
+          ← Back
+        </a>
+      {% else %}
+        <a href="{% url 'patient_medical_records' %}" class="btn btn-outline-secondary">
+          ← Back
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Main Record Card -->
+  <div class="card shadow-sm">
+
+    <!-- Card header -->
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">{{ record.title }}</h5>
+      <span class="badge bg-light text-dark">
+        {{ record.get_record_type_display }}
+      </span>
+    </div>
+
+    <div class="card-body p-4">
+
+      <!-- Doctor and Patient info side by side -->
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <h6 class="text-primary fw-bold">👨‍⚕️ Uploaded By</h6>
+          <p class="mb-0 fw-bold">
+            Dr. {{ record.doctor.user_profile.user.get_full_name }}
+          </p>
+          <p class="text-muted small mb-0">
+            {{ record.doctor.specialization }}
+          </p>
+          <p class="text-muted small mb-0">
+            License: {{ record.doctor.license_number }}
+          </p>
+        </div>
+        <div class="col-md-6 text-md-end">
+          <h6 class="text-primary fw-bold">🧑‍💼 Patient</h6>
+          <p class="mb-0 fw-bold">
+            {{ record.patient.user_profile.user.get_full_name }}
+          </p>
+          <p class="text-muted small mb-0">
+            🩸 Blood Group: {{ record.patient.blood_group|default:"—" }}
+          </p>
+          <p class="text-muted small mb-0">
+            🎂 DOB: {{ record.patient.date_of_birth|default:"—" }}
+          </p>
+        </div>
+      </div>
+
+      <hr>
+
+      <!-- Record metadata -->
+      <div class="row g-3 mb-4">
+        <div class="col-md-4">
+          <small class="text-muted d-block">Record Date</small>
+          <strong>{{ record.record_date|date:"d M Y" }}</strong>
+        </div>
+        <div class="col-md-4">
+          <small class="text-muted d-block">Record Type</small>
+          <strong>{{ record.get_record_type_display }}</strong>
+        </div>
+        <div class="col-md-4">
+          <small class="text-muted d-block">Uploaded On</small>
+          <strong>{{ record.created_at|date:"d M Y" }}</strong>
+        </div>
+      </div>
+
+      <!-- Description / Notes -->
+      {% if record.description %}
+        <div class="alert alert-light border mb-4">
+          <strong>📝 Notes:</strong><br>
+          {{ record.description }}
+        </div>
+      {% endif %}
+
+      <!-- File Preview Section -->
+      {% if record.file %}
+        <h6 class="text-success mb-3">📎 Attached File</h6>
+
+        {% if record.is_image %}
+          <!-- Show full image -->
+          <div class="text-center mb-3">
+            <img src="{{ record.file.url }}"
+                 class="img-fluid rounded shadow-sm"
+                 style="max-height:500px; max-width:100%;"
+                 alt="{{ record.title }}">
+          </div>
+
+        {% elif record.is_pdf %}
+          <!-- Embed PDF in an iframe -->
+          <div class="border rounded mb-3" style="height:500px; overflow:hidden;">
+            <iframe src="{{ record.file.url }}"
+                    width="100%"
+                    height="100%"
+                    style="border:none;">
+              <p>
+                Your browser does not support PDF viewing.
+                <a href="{{ record.file.url }}">Click here to download the PDF</a>
+              </p>
+            </iframe>
+          </div>
+        {% endif %}
+
+        <!-- Download button at bottom -->
+        <div class="text-center mt-3 no-print">
+          <a href="{{ record.file.url }}"
+             target="_blank"
+             class="btn btn-success btn-lg">
+            ⬇️ Download File
+          </a>
+        </div>
+
+      {% else %}
+        <div class="alert alert-secondary">
+          📋 No file was attached to this record.
+        </div>
+      {% endif %}
+
+    </div><!-- end card-body -->
+  </div><!-- end card -->
+
+</div>
+
+<!-- Print CSS: hides navbar and buttons when printing -->
+<style>
+@media print {
+  .no-print  { display: none !important; }
+  .navbar    { display: none !important; }
+  body       { background: white !important; }
+  .card      { border: none !important; box-shadow: none !important; }
+}
+</style>
+
+{% endblock %}
