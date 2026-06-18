@@ -751,21 +751,21 @@ def upload_medical_record(request):
         try:
             patient_user = patient.user_profile.user
             send_mail(
-                subject=f'📁 New Medical Record: {title}',
+                subject=f' New Medical Record: {title}',
                 message=f'''
-Hi {patient_user.get_full_name()},
+                Hi {patient_user.get_full_name()},
 
-Dr. {doctor.user_profile.user.get_full_name()} has uploaded a new medical record for you.
+                Dr. {doctor.user_profile.user.get_full_name()} has uploaded a new medical record for you.
 
-Title       : {title}
-Type        : {record.get_record_type_display()}
-Date        : {record_date}
-Description : {description or "No description provided"}
+                Title       : {title}
+                Type        : {record.get_record_type_display()}
+                Date        : {record_date}
+                Description : {description or "No description provided"}
 
-Login to view: http://127.0.0.1:8000/my-medical-records/
+                Login to view: http://127.0.0.1:8000/my-medical-records/
 
-- Hospital App Team
-                ''',
+                - Hospital App Team
+                                ''',
                 from_email     = settings.DEFAULT_FROM_EMAIL,
                 recipient_list = [patient_user.email],
                 fail_silently  = False,

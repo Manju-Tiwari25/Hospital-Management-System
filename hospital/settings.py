@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'accounts',  
+    'rest_framework',             
+    'rest_framework.authtoken', 
 ]
 
 MIDDLEWARE = [
@@ -140,3 +142,27 @@ EMAIL_USE_TLS       = True
 EMAIL_HOST_USER     = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL  = f'Hospital App <{os.environ.get("EMAIL_HOST_USER")}>'
+
+# Django REST Framework configuration
+REST_FRAMEWORK = {
+    # Use Token Authentication for mobile apps
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    # Require login by default for all API endpoints
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    # Return JSON responses
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ],
+    # Pagination — 20 items per page
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+    # Date format
+    'DATE_FORMAT': '%Y-%m-%d',
+    'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',
+}
