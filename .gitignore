@@ -22,3 +22,9 @@ Thumbs.db
 
 # .gitignore
 db.sqlite3
+
+# Media uploads
+/media/
+
+# Static collected files (optional)
+# /staticfiles/

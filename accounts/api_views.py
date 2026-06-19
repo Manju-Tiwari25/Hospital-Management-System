@@ -620,3 +620,16 @@ def api_dashboard(request):
             },
             'upcoming_appointments': AppointmentSerializer(upcoming, many=True).data,
         })
+        
+# ─────────────────────────────────────────
+#  HEALTH CHECK (keeps Render app awake)
+# ─────────────────────────────────────────
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def health_check(request):
+    """
+    GET /api/health/
+    Used by UptimeRobot to keep app awake on Render free tier.
+    """
+    return Response({'status': 'ok'}, status=200)
