@@ -625,11 +625,7 @@ def api_dashboard(request):
 #  HEALTH CHECK (keeps Render app awake)
 # ─────────────────────────────────────────
 
-@api_view(['GET'])
+@api_view(['GET', 'HEAD'])
 @permission_classes([AllowAny])
 def health_check(request):
-    """
-    GET /api/health/
-    Used by UptimeRobot to keep app awake on Render free tier.
-    """
     return Response({'status': 'ok'}, status=200)
